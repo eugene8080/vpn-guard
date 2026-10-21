@@ -23,6 +23,13 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests\lint-ps1.ps1
 
+      - name: Standalone checker synthetic regressions
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File tests\verify-network-check.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tests/verify-webrtc.cjs
+
       # 同一份分类器回归，换成 Windows PowerShell 5.1 做跨语言比对（Unix job 用的是 pwsh 7）
       - name: 分类器行为回归（Git Bash + Windows PowerShell 5.1，硬闸门）
         shell: bash
@@ -271,7 +278,7 @@ jobs:
           v=$(grep -oE 'WEBRTC RESULT:[A-Z_]+' /tmp/rtc.out 2>/dev/null | head -1 | sed 's/.*://')
           echo "检测页终态判定: ${v:-<无输出>}"
           case "$v" in
-            OK|LEAK|NO_SRFLX|SRFLX_NO_EXITREF)
+            OK|DIFFERENT|NO_SRFLX|SRFLX_NO_EXITREF)
               echo "✅ PASS：$(uname) 上 WebRTC 检测页跑到终态（判定=${v}），逻辑无报错" ;;
             PENDING|UNSUPPORTED)
               echo "❌ FAIL：检测页停在 ${v}，疑似 JS 报错或 RTCPeerConnection 不可用"

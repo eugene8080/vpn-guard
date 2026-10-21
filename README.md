@@ -1,3 +1,7 @@
+# Standalone Windows check (fork)
+
+Updated: 2026-10-21. Double-click **Network Check.cmd** for the simple read-only checker. See [setup, verdict scope and report privacy](NETWORK-CHECK.md). The documentation below describes the original tools; their safety claims are not the standalone checker's verdicts.
+
 # vpn-guard · VPN 出口一致性 / 防泄露工具箱
 
 ![vpn-guard — VPN 出口一致性 / 防泄露工具箱](assets/social-preview.jpg)

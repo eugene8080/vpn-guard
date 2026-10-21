@@ -1,3 +1,7 @@
+# Standalone Windows check (fork)
+
+Updated: 2026-10-21. Double-click **Network Check.cmd** for the simple read-only checker. See [setup, verdict scope and report privacy](NETWORK-CHECK.md). The documentation below describes the original tools; their safety claims are not the standalone checker's verdicts.
+
 # vpn-guard · VPN Exit-Node Consistency / Anti-Leak Toolkit
 
 ![vpn-guard — VPN exit-node consistency / anti-leak toolkit](assets/social-preview.jpg)

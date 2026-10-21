@@ -35,12 +35,12 @@
 <div class="wrap">
   <h1>WebRTC 泄露主动检测</h1>
   <p class="sub">在当前浏览器里发起真实的 STUN 探测，看 WebRTC 暴露的公网 IP 是否与你的 VPN 出口一致。
-    <br>WebRTC leak test — compares the public IP WebRTC exposes (via STUN/UDP) against your VPN exit IP.</p>
+    <br>Browser-only observations: compares STUN candidates with HTTP IP observations. Neither path is assumed to use a VPN.</p>
 
   <div id="verdict" class="verdict wait">正在探测…<small>创建 RTCPeerConnection、收集 ICE 候选、对比出口 IP，约需 2–4 秒。</small></div>
 
   <table>
-    <tr><th>出口 IP（HTTP，走隧道）</th><td id="exit" class="muted">获取中…</td></tr>
+    <tr><th>Observed HTTP IP</th><td id="exit" class="muted">获取中…</td></tr>
     <tr><th>WebRTC 反射候选 srflx<br>（STUN 看到的公网 IP）</th><td id="srflx" class="muted">收集中…</td></tr>
     <tr><th>本地候选 host</th><td id="host" class="muted">收集中…</td></tr>
   </table>
@@ -49,10 +49,10 @@
     原理：WebRTC 为了打洞会通过 STUN 服务器发 UDP，拿回"公网看到的你的 IP"（srflx 候选）。
     如果这条 UDP 没走 VPN 隧道，srflx 就会是你的<strong>真实 IP</strong>，即便网页用 HTTP 看到的是出口 IP——
     这就是经典的 WebRTC 泄露。<br>
-    · <strong>一致</strong>：srflx 与出口 IP 相同，UDP 也在隧道内，安全。<br>
-    · <strong>泄露</strong>：srflx 出现了与出口不同的公网 IP，真实身份正通过 WebRTC 暴露。<br>
-    · <strong>无 srflx</strong>：没拿到反射候选，通常表示 UDP 被完全隧道/拦截（多为好事），或 STUN 不可达。<br>
-    修复：浏览器层用扩展禁用 WebRTC，或让客户端以 TUN 模式接管全局 UDP（系统代理模式挡不住 WebRTC）。
+    · <strong>Match</strong>: only the observed addresses match; tunnel coverage is unknown.<br>
+    · <strong>Difference</strong>: review routing or address rotation; this alone does not prove leakage.<br>
+    · <strong>No srflx</strong>: inconclusive; STUN may be unavailable or blocked.<br>
+    Results apply only to this browser/profile and this run, not other applications. This page contacts ipify and Google/Cloudflare STUN servers.
   </p>
 
   <pre id="result">RESULT:PENDING</pre>
@@ -107,7 +107,7 @@
       ? srflxList.map(function (ip) {
           var leak = leaking.indexOf(ip) >= 0;
           return '<code class="' + (leak ? "ip-leak" : (exitIPs ? "ip-ok" : "")) + '">' + ip +
-                 (leak ? " ← 泄露" : "") + "</code>";
+                 (leak ? " ← different" : "") + "</code>";
         }).join("<br>")
       : '<span class="muted">无</span>';
     document.getElementById("srflx").innerHTML = srflxHtml;
@@ -118,19 +118,19 @@
     } else if (srflxList.length === 0) {
       cls = "warn"; verdict = "NO_SRFLX";
       msg = "未拿到 WebRTC 反射候选";
-      sub = "UDP 被完全隧道/拦截（多为好事），或 STUN 不可达。此浏览器没有通过 WebRTC 暴露公网 IP。";
+      sub = "UNKNOWN: No server-reflexive candidates observed. STUN failure or filtering is possible; protection is not established.";
     } else if (!exitIPs) {
       cls = "warn"; verdict = "SRFLX_NO_EXITREF";
       msg = "拿到 srflx，但未取到出口 IP 无法比对";
       sub = "srflx 公网 IP：" + srflxList.join(", ") + "。请手动确认它是否等于你的 VPN 出口 IP。";
     } else if (leaking.length > 0) {
-      cls = "leak"; verdict = "LEAK";
-      msg = "⚠ WebRTC 泄露：暴露了与出口不同的公网 IP";
-      sub = "泄露 IP：" + leaking.join(", ") + " —— 这很可能是你的真实地址，正绕过 VPN 通过 WebRTC 外泄。";
+      cls = "warn"; verdict = "DIFFERENT";
+      msg = "WARNING: STUN and HTTP addresses differ";
+      sub = "Observed: " + leaking.join(", ") + ". Routing, rotation or bypass may explain this; leakage is not established.";
     } else {
       cls = "ok"; verdict = "OK";
-      msg = "✓ 一致：WebRTC 公网 IP 与 VPN 出口相同";
-      sub = "srflx 与出口 IP 一致，UDP 也在隧道内，无泄露。";
+      msg = "PASS: observed STUN and HTTP addresses match";
+      sub = "Only these observations match. This does not prove UDP tunnel coverage or absence of leaks.";
     }
     v.className = "verdict " + cls;
     v.innerHTML = msg + (sub ? "<small>" + sub + "</small>" : "");

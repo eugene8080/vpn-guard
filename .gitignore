@@ -8,6 +8,10 @@ chrome-*-profile/
 *.log
 *.tmp
 
+# Standalone checker: reports, future machine configuration and IP history stay local.
+.network-check/
+*.lnk
+
 # AI 助手工作区数据
 .workbuddy/
 
